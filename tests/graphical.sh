@@ -11,7 +11,7 @@ make graph
 ./src_lda 	-log=true \
 		 	-out=../tests/graphical \
 		 	-I=500 \
-		 	-in=../data/graphical/corpus.dat \
+		 	-in=../data/graphical/input.dat \
 		 	-ks=../data/graphical/ks.dat \
 		 	-K=10 \
 		 	-model=bijective \
