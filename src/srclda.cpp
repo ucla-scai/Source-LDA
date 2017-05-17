@@ -19,15 +19,6 @@ using namespace std;
 using namespace std::chrono;
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
-DisplayOptions::DisplayOptions() {
-    labels = true;
-    truncated = true;
-    top = true;
-    n = 10;
-    d = 5;
-}
-//----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
 SrcLdaOptions::SrcLdaOptions() {
     left = 0.0;
     right = DBL_MAX;
@@ -46,6 +37,7 @@ SrcLdaOptions::SrcLdaOptions() {
     output_dir = ".";
     use_key = false;
     show_loglike = false;
+    use_alpha = false;
 }
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
@@ -632,7 +624,7 @@ void SrcLda::Display_perplexity() {
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 void SrcLda::Display_stats(int iter) {
-    double avg_src = stats.cnt_src > 0 ? stats.tot_src / ((double)stats.cnt_src) : 0;
+    double avg_src = stats.cnt_model > 0 ? stats.tot_model / ((double)stats.cnt_model) : 0;
     double avg_reg = stats.cnt_reg > 0 ? stats.tot_reg / ((double)stats.cnt_reg) : 0;
     cout << currentDateTime() << "...SrcLDA.gibbs - end iter...iteration time " << stats.iteration_time << endl;
     cout << currentDateTime() << "...SrcLDA.gibbs - end iter...avg iteration time " << ((double)stats.tot_iteration_time) / ((double)iter+1) << endl;
@@ -676,7 +668,7 @@ void SrcLda::load() {
         hidden[i] = false;
         visible_topics.push_back(i);
     }
-    alpha = 1.0;//((double)50) / ((double)visible_topics.size());
+    alpha = options.use_alpha ? options.alpha : ((double)50) / ((double)visible_topics.size());
     pr = new double[T];
     if (options.perplexity != none) {
         pr_test = new double[T];
@@ -756,8 +748,8 @@ void SrcLda::gibbs() {
         auto start = high_resolution_clock::now();
         stats.tot_reg = 0;
         stats.cnt_reg = 0;
-        stats.tot_src = 0;
-        stats.cnt_src = 0;
+        stats.tot_model = 0;
+        stats.cnt_model = 0;
         stats.iteration_time = 0;
         cout << currentDateTime() << "...SrcLDA.gibbs - begin iter " << iter << "...topics " << visible_topics.size() << endl;
         if (iter > 0 && options.show_loglike) {
@@ -770,7 +762,12 @@ void SrcLda::gibbs() {
                 Write_distributions(iter);
             }
             else {
-                save(iter);
+                if (options.save_points.find(iter) != options.save_points.end()) {
+                    save(iter);
+                }
+                else {
+                    save();
+                }
             }
         }
         if (iter % burn == 0 && iter > 0 && options.model != bijective) {
@@ -855,8 +852,11 @@ void SrcLda::Load_deltas(){
         lambdas = new double[A];
     }
 
-    double left_bound = Max(mu - 2*sigma, options.left);
-    double right_bound = Min(mu + 2*sigma, options.right);
+    double left_max = options.use_gtpoints ? 0.0 : options.left;
+    double right_min = options.use_gtpoints ? 1.0 : options.right;
+
+    double left_bound = Max(mu - 2*sigma, left_max);
+    double right_bound = Min(mu + 2*sigma, right_min);
 
     double interval = A < 2.0 ? 0.0 : (right_bound - left_bound) / ((double)(A-1));
 
@@ -1043,8 +1043,8 @@ void SrcLda::Populate_prob(int i, int t, int word, int doc, int start) {
         }
 
         pr[i] = sum;
-        stats.cnt_src++;
-        stats.tot_src += pr[i];
+        stats.cnt_model++;
+        stats.tot_model += pr[i];
     }
     if (i > start) {
         pr[i] += pr[i-1];
@@ -1101,7 +1101,7 @@ int SrcLda::Sample_test(int doc, int token){
     n_d_test[topic][doc] = Max(n_d_test[topic][doc]-1, 0);
     n_w_test[topic][w] = Max(n_w_test[topic][w]-1, 0);
     n_w_dot_test[topic] = Max(n_w_dot_test[topic]-1, 0);
-    alpha = 1.0;//((double)50) / ((double)visible_topics.size());
+    alpha = options.use_alpha ? options.alpha : ((double)50) / ((double)visible_topics.size());
     topic = Pop_sample_test(w, doc);
     topic = visible_topics[topic];
     n_d_test[topic][doc]++;
@@ -1125,11 +1125,12 @@ int SrcLda::Sample(int doc, int token){
         cout << currentDateTime() << "...removing topic " << topic << endl;
         Hide_topic(topic);
     }
-    alpha = ((double)50) / ((double)visible_topics.size());
+    alpha = options.use_alpha ? options.alpha : ((double)50) / ((double)visible_topics.size());
     topic = Pop_sample(w, doc);
     topic = visible_topics[topic];
     stats.assign_total++;
-    if (options.use_key && ground_truth[doc][token] == topic) {
+    int offset = options.model == bijective ? 0 : K;
+    if (options.use_key && ground_truth[doc][token] + offset == topic) {
         stats.assign_correct++;
     }
     if (n_d[topic][doc] == 0) {

@@ -15,4 +15,7 @@ CMakeFiles
 tests/graphical/*
 tests/integrate/*
 tests/reuters/*
+tests/wiki/*
+tests/bench/*
+tests/*/*
 src/src_lda

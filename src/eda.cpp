@@ -26,23 +26,26 @@ EdaOptions::EdaOptions() {
     edatopics = "bias_topics_c.dat";
     output_dir = ".";
     model = src;
+    use_key = false;
 }
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 void Eda::Load_corpus(){
 
-    ifstream fin_t;
-    fin_t.open(options.key, ios_base::in);
-    for (string line; getline(fin_t, line);) {
-        istringstream fstring(line);
-        int t_id;
-        vector<int> doc_key;
-        while (fstring >> t_id) {
-            doc_key.push_back(t_id);
+    if (options.use_key) {
+        ifstream fin_t;
+        fin_t.open(options.key, ios_base::in);
+        for (string line; getline(fin_t, line);) {
+            istringstream fstring(line);
+            int t_id;
+            vector<int> doc_key;
+            while (fstring >> t_id) {
+                doc_key.push_back(t_id);
+            }
+            ground_truth.push_back(doc_key);
         }
-        key_t.push_back(doc_key);
+        fin_t.close();
     }
-    fin_t.close();
 
     ifstream fin;
     int id = 0;
@@ -120,15 +123,18 @@ void Eda::Load_topics(){
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 void Eda::Display_stats(int iter) {
-    double avg_eda = stats.cnt_eda > 0 ? stats.tot_eda / ((double)stats.cnt_eda) : 0;
+    double avg_eda = stats.cnt_model > 0 ? stats.tot_model / ((double)stats.cnt_model) : 0;
     double avg_reg = stats.cnt_reg > 0 ? stats.tot_reg / ((double)stats.cnt_reg) : 0;
     cout << currentDateTime() << "...EDA.gibbs - end iter...iteration time " << stats.iteration_time << endl;
     cout << currentDateTime() << "...EDA.gibbs - end iter...avg iteration time " << ((double)stats.tot_iteration_time) / ((double)iter+1)  << endl;
     cout << currentDateTime() << "...EDA.gibbs - end iter...avg eda " << avg_eda << endl;
     cout << currentDateTime() << "...EDA.gibbs - end iter...avg reg " << avg_reg << endl;
-    cout << currentDateTime() << "...SrcLDA.gibbs - end iter...accuracy " << ((((double)corr) / ((double)out_of)) * 100.0) << endl;
-    cout << currentDateTime() << "...SrcLDA.gibbs - end iter...correct " << corr << endl;
-    cout << currentDateTime() << "...SrcLDA.gibbs - end iter...total " << out_of << endl;
+    if (options.use_key) {
+        cout << currentDateTime() << "...SrcLDA.gibbs - end iter...accuracy "
+             << ((((double) stats.assign_correct) / ((double) stats.assign_total)) * 100.0) << endl;
+        cout << currentDateTime() << "...SrcLDA.gibbs - end iter...correct " << stats.assign_correct << endl;
+        cout << currentDateTime() << "...SrcLDA.gibbs - end iter...total " << stats.assign_total << endl;
+    }
 }
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
@@ -253,15 +259,15 @@ void Eda::gibbs() {
 
     for (int iter=0; iter < I; iter++) {
 
-        out_of = 0;
-        corr = 0;
+        stats.assign_correct = 0;
+        stats.assign_total = 0;
 
         auto start = high_resolution_clock::now();
 
         stats.tot_reg = 0;
         stats.cnt_reg = 0;
-        stats.tot_eda = 0;
-        stats.cnt_eda = 0;
+        stats.tot_model = 0;
+        stats.cnt_model = 0;
         stats.iteration_time = 0;
 
         cout << currentDateTime() << "...EDA.gibbs - begin iter " << iter << "...topics " << visible_topics.size() << endl;
@@ -363,8 +369,8 @@ void Eda::Populate_prob(int i, int t, int word, int doc, int start) {
             pr[i] = iter->second * (((double) n_d[t][doc] + alpha) / (((double) (corpus[doc].size() - 1)) + ((double) visible_topics.size()) * alpha));
         }
 
-        stats.cnt_eda++;
-        stats.tot_eda += pr[i];
+        stats.cnt_model++;
+        stats.tot_model += pr[i];
     }
 
     if (i > start) {
@@ -424,9 +430,10 @@ int Eda::Sample(int doc, int token){
     topic = Pop_sample(w, doc);
     topic = visible_topics[topic];
 
-    out_of++;
-    if (key_t[doc][token] == topic) {
-        corr++;
+    stats.assign_total++;
+    int offset = options.model == bijective ? 0 : K;
+    if (options.use_key && ground_truth[doc][token] + offset == topic) {
+        stats.assign_correct++;
     }
 
     if (n_d[topic][doc] == 0) {
@@ -492,7 +499,7 @@ void Eda::Write_distributions() {
     vector<int> idx(T);
 
     ofstream phi_out_latent;
-    phi_out_latent.open(options.output_dir + "/phi_m_latent.dat");
+    phi_out_latent.open(options.output_dir + "/phi.dat");
     for (int t=0; t<K; t++) {
         if (hidden[t]) { continue; }
         phi_out_latent << t;

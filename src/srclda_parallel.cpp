@@ -210,6 +210,7 @@ void*SrcLdaParallel::Populate_prob_thread_wrapper(void *args) {
 //----------------------------------------------------------------------------------
 SrcLdaParallel::SrcLdaParallel(SrcLdaOptions options) : SrcLda(options) {
     end = false;
+    test = false;
 }
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------

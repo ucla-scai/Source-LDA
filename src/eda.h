@@ -7,16 +7,6 @@
 #include "srclda.h"
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
-struct eda_stats {
-    double tot_eda;
-    int cnt_eda;
-    double tot_reg;
-    int cnt_reg;
-    long iteration_time;
-    long tot_iteration_time;
-};
-//----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
 struct EdaOptions {
 public:
     int K;
@@ -29,20 +19,19 @@ public:
     Model model;
     DisplayOptions display;
     string key;
+    bool use_key;
     EdaOptions();
 };
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 class Eda {
 protected:
-    vector<vector<int>> key_t;
-    int corr;
-    int out_of;
-    eda_stats stats;
+    Stats stats;
     vector<vector<int>> corpus;
     vector<int>* corpus_t;
     bool* hidden;
     vector<int> visible_topics;
+    vector<vector<int>> ground_truth;
     vector<string> topic_labels;
     double* pr;
     int** n_w;

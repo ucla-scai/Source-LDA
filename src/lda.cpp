@@ -272,7 +272,24 @@ void Lda::Calculate_phi(){
 }
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
+string Lda::Clean(double d) {
+
+    std::stringstream ss(stringstream::in | stringstream::out);
+    if (options.display.truncated) {
+        ss << setprecision(options.display.d) << d;
+    }
+    else {
+        ss << d;
+    }
+    string s = ss.str();
+    return s;
+}
+//----------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------
 void Lda::Write_distributions() {
+
+    int top = options.display.top ? options.display.n : K;
+    vector<int> idx(K);
 
     ofstream theta_out;
     theta_out.open(options.output_dir + "/theta.dat");
@@ -286,11 +303,21 @@ void Lda::Write_distributions() {
     theta_out.close();
 
     ofstream phi_out;
-    phi_out.open(options.output_dir + "/phi_m_lda.dat");
+    phi_out.open(options.output_dir + "/phi.dat");
     for (int t=0; t<K; t++) {
         phi_out << t;
-        for (int w=0; w<V; w++) {
-            phi_out << " " << phi[t][w];
+        if (options.display.top) {
+            vector<double> phi_t(phi[t]);
+            Sort(phi_t, idx);
+            for (int w=0; w<Min(options.display.n, V); w++) {
+                string word = options.display.labels ? id_word[idx[w]] : to_string(idx[w]);
+                phi_out << " " << word << ":" << Clean(phi_t[w]);
+            }
+        }
+        else {
+            for (int w=0; w<V; w++) {
+                phi_out << " " << Clean(phi[t][w]);
+            }
         }
         phi_out << endl;
     }

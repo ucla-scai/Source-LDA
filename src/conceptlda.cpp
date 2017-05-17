@@ -32,19 +32,20 @@ ConceptLdaOptions::ConceptLdaOptions() {
 //----------------------------------------------------------------------------------
 void ConceptLda::Load_corpus(){
 
-    ifstream fin_t;
-    fin_t.open(options.key, ios_base::in);
-    for (string line; getline(fin_t, line);) {
-        istringstream fstring(line);
-        int t_id;
-        vector<int> doc_key;
-        while (fstring >> t_id) {
-            doc_key.push_back(t_id);
+    if (options.use_key) {
+        ifstream fin_t;
+        fin_t.open(options.key, ios_base::in);
+        for (string line; getline(fin_t, line);) {
+            istringstream fstring(line);
+            int t_id;
+            vector<int> doc_key;
+            while (fstring >> t_id) {
+                doc_key.push_back(t_id);
+            }
+            ground_truth.push_back(doc_key);
         }
-        key_t.push_back(doc_key);
+        fin_t.close();
     }
-    fin_t.close();
-
 
     ifstream fin;
     int id = 0;
@@ -79,9 +80,12 @@ void ConceptLda::Load_corpus(){
 void ConceptLda::Display_stats(int iter) {
     cout << currentDateTime() << "...ConceptLDA.gibbs - end iter...iteration time " << stats.iteration_time << endl;
     cout << currentDateTime() << "...ConceptLDA.gibbs - end iter...avg iteration time " << ((double)stats.tot_iteration_time) / ((double)iter+1)  << endl;
-    cout << currentDateTime() << "...SrcLDA.gibbs - end iter...accuracy " << ((((double)corr) / ((double)out_of)) * 100.0) << endl;
-    cout << currentDateTime() << "...SrcLDA.gibbs - end iter...correct " << corr << endl;
-    cout << currentDateTime() << "...SrcLDA.gibbs - end iter...total " << out_of << endl;
+    if (options.use_key) {
+        cout << currentDateTime() << "...SrcLDA.gibbs - end iter...accuracy "
+             << ((((double) stats.assign_correct) / ((double) stats.assign_total)) * 100.0) << endl;
+        cout << currentDateTime() << "...SrcLDA.gibbs - end iter...correct " << stats.assign_correct << endl;
+        cout << currentDateTime() << "...SrcLDA.gibbs - end iter...total " << stats.assign_total << endl;
+    }
 }
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
@@ -136,7 +140,6 @@ void ConceptLda::load() {
 
     I = options.I;
     P = options.P;
-    token_count = 0;
 
     cout << currentDateTime() << "...ConceptLDA.load - Load corpus\n";
 
@@ -249,8 +252,8 @@ void ConceptLda::gibbs() {
 
     for (int iter=0; iter <= I; iter++) {
 
-        out_of = 0;
-        corr = 0;
+        stats.assign_correct = 0;
+        stats.assign_total = 0;
 
         auto start = high_resolution_clock::now();
 
@@ -443,9 +446,11 @@ int ConceptLda::Sample(int doc, int token){
     alpha = ((double)50) / ((double)visible_topics.size());
     topic = Pop_sample(w, doc);
     topic = visible_topics[topic];
-    out_of++;
-    if (key_t[doc][token] == topic) {
-        corr++;
+
+    stats.assign_total++;
+    int offset = options.model == bijective ? 0 : K;
+    if (options.use_key && ground_truth[doc][token] + offset == topic) {
+        stats.assign_correct++;
     }
     if (n_d[topic][doc] == 0) {
         n_d_dot[topic]++;
@@ -548,7 +553,7 @@ void ConceptLda::Write_distributions() {
     theta_out.close();
 
     ofstream phi_out;
-    phi_out.open(options.output_dir + "/phi_m_concept.dat");
+    phi_out.open(options.output_dir + "/phi.dat");
 
     for (int t=0; t<K; t++) {
         if (hidden[t]) { continue; }
@@ -562,7 +567,7 @@ void ConceptLda::Write_distributions() {
     phi_out.close();
 
     ofstream psi_out;
-    psi_out.open(options.output_dir + "/phi.dat");
+    psi_out.open(options.output_dir + "/psi.dat");
     for (int t=0; t<B; t++) {
         if (hidden[t+K]) { continue; }
         string topic = options.display.labels ? topic_labels[t] : to_string(t);

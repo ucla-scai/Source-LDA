@@ -7,7 +7,7 @@ Source-LDA: Enhancing probabilistic topic models using prior knowledge sources (
 
 To run this project, you first need to install:
 
-1. [gsl](https://www.gnu.org/software/gsl/)
+1. [GSL](https://www.gnu.org/software/gsl/) binary and development package
 
 2. C++ 11
 
@@ -18,8 +18,8 @@ Source-LDA.
 Usage:
 
 * src_lda 
+* src_lda -g [-ks=\<file>] [-out=\<file>] [-P=\<number>]
 * src_lda -h | --help
-
 * src_lda 
  + [-alg=\<name>]
  + [-model=\<name>]
@@ -38,10 +38,16 @@ Usage:
  + [-A=\<number>]
  + [-gt=\<file>]
  + [-key=\<file>]
-		
+ + [-save=\<list>]
+ + [-left=\<number>]
+ + [-right=\<number>]
+ + [-alpha=\<number>]
+ + [-raw=\<bool>]
+	
 Options:
 
-* -h --help Show this screen (also shows with no parameters)	
+* -h --help Show this screen (also shows with no parameters)
+* -g Generate g_t points file
 * -alg=\<name> Algorithm used (src|eda|ctm|lda) [default: src]
 * -model=\<name>	Model used (src|bijective|mix) [default: src]
 * -in=\<file> Input corpus [default: input.dat]
@@ -58,3 +64,8 @@ Options:
 * -A=\<number> Approximation steps for Source-LDA				[default: 5]
 * -gt=\<file> File containing gt point pre calculations [default: gt.dat]
 * -key=\<file> Key used for classification percentage [default: key.dat]
+* -save=\<list> Comma seperated list of iteration save points [default: ]
+* -left=\<number> Left bound for sigma [default: 0]
+* -right=\<number> Right bound for sigma [default: ]
+* -alpha=\<number> Symmetric hyperparameter for theta [defalut: 50/T]
+* -raw=\<bool> Output entire phi and theta matrices [defalut: false]

@@ -179,7 +179,6 @@ void GtPoints::run() {
                 id++;
             }
         }
-        break;
     }
 
     fin.close();
@@ -211,7 +210,6 @@ void GtPoints::run() {
             }
         }
         deltas_sums.push_back(sum);
-        break;
     }
 
     vector<vector<double>> d_pcts;
@@ -290,7 +288,7 @@ double GtPoints::At(int i, const vector<double> & delts_pcts, const double alpha
     double js_divergences = 0;
     int n = 0;
 
-    for (int i=0; i<1000; i++) {
+    for (int i=0; i<1; i++) {
         double theta[k];
         gsl_ran_dirichlet(this->RANDOM_NUMBER, k, alpha, theta);
         double js = JS(theta, &delts_pcts[0], k);

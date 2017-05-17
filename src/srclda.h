@@ -9,39 +9,6 @@
 #include "gtpoints.h"
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
-enum Perplexity {
-    none, imp, lr, heinrich
-};
-//----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
-enum Model {
-    bijective, mix, src
-};
-//----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
-struct src_stats {
-    double tot_src;
-    int cnt_src;
-    double tot_reg;
-    int cnt_reg;
-    long iteration_time;
-    long tot_iteration_time;
-    int assign_correct;
-    int assign_total;
-};
-//----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
-struct DisplayOptions {
-public:
-    bool labels;
-    bool truncated;
-    bool top;
-    int n;
-    int d;
-    DisplayOptions();
-};
-//----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
 struct SrcLdaOptions {
 public:
     double sigma;
@@ -65,13 +32,15 @@ public:
     unordered_set<int> save_points;
     double left;
     double right;
+    double alpha;
+    bool use_alpha;
     SrcLdaOptions();
 };
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 class SrcLda {
 protected:
-    src_stats stats;
+    Stats stats;
     GtPoints gt_points;
     vector<string> topic_labels;
     vector<vector<int>> corpus;

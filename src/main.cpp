@@ -68,6 +68,8 @@ void Display_help(const string & exe) {
     cout << "[-save=<list>]\n\t\t";
     cout << "[-left=<number>]\n\t\t";
     cout << "[-right=<number>]\n\t\t";
+    cout << "[-alpha=<number>]\n\t\t";
+    cout << "[-raw=<bool>]\n\t\t";
     cout << "\nOptions:\n\t";
     cout << "-h --help Show this screen (also shows with no parameters)\n\t";
     cout << "-g Generate g_t points file\n\t";
@@ -89,7 +91,9 @@ void Display_help(const string & exe) {
     cout << "-key=<file> Key used for classification percentage [default: key.dat]\n\t";
     cout << "-save=<list> Comma seperated list of iteration save points [default: ]\n\t";
     cout << "-left=<number> Left bound for sigma [default: 0]\n\t";
-    cout << "-right=<number> Right bound for sigma [default: ]\n\n";
+    cout << "-right=<number> Right bound for sigma [default: ]\n\t";
+    cout << "-alpha=<number> Symmetric hyperparameter for theta [defalut: 50/T]\n\t";
+    cout << "-raw=<false> Output entire phi and theta matrices [defalut: false]\n\n";
 }
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
@@ -114,6 +118,9 @@ int main(int argc, char* argv[]) {
     string gt = "gt.dat";
     string key = "key.dat";
     vector<int> save;
+    double alpha = 0.0;
+    bool use_alpha = false;
+    bool raw = false;
 
     InputParser input(argc, argv);
     if(argc == 1 || input.cmdOptionExists("-h") || input.cmdOptionExists("--help")){
@@ -197,6 +204,11 @@ int main(int argc, char* argv[]) {
     if (!c_input.empty()){
         C = stoi(c_input);
     }
+    string alpha_input = input.getCmdOption("-alpha");
+    if (!alpha_input.empty()){
+        alpha = stod(alpha_input);
+        use_alpha = true;
+    }
     string left_input = input.getCmdOption("-left");
     if (!left_input.empty()){
         left = stod(left_input);
@@ -219,6 +231,11 @@ int main(int argc, char* argv[]) {
         if (perp_input == "hein") { perp = heinrich; }
         if (perp_input == "imp") { perp = imp; }
         if (perp_input == "lr") { perp = lr; }
+    }
+    string raw_input = input.getCmdOption("-raw");
+    if (!raw_input.empty()){
+        if (raw_input == "true") { raw = true; }
+        if (raw_input == "false") { raw = false; }
     }
     string log_input = input.getCmdOption("-log");
     if (!log_input.empty()){
@@ -259,6 +276,9 @@ int main(int argc, char* argv[]) {
         options.show_loglike = log;
         options.left = left;
         options.right = right;
+        options.alpha = alpha;
+        options.use_alpha = use_alpha;
+        options.display.top = !raw;
         for (int i=0; i<save.size(); i++) {
             options.save_points.insert(save[i]);
         }
@@ -276,7 +296,29 @@ int main(int argc, char* argv[]) {
         }
     }
     if (alg == eda) {
-
+        EdaOptions options;
+        options.corpus = in;
+        options.key = key;
+        options.I = I;
+        options.K = K;
+        options.model = mod;
+        options.output_dir = out;
+        options.edatopics = ks;
+        options.P = P;
+        options.use_key = File_exists(key);
+        options.display.top = !raw;
+        if (P > 1) {
+            EdaParallel topic_model(options);
+            topic_model.load();
+            topic_model.gibbs();
+            topic_model.save();
+        }
+        else {
+            Eda topic_model(options);
+            topic_model.load();
+            topic_model.gibbs();
+            topic_model.save();
+        }
     }
     if (alg == ctm) {
         ConceptLdaOptions options;
@@ -290,6 +332,7 @@ int main(int argc, char* argv[]) {
         options.P = P;
         options.C = C;
         options.use_key = File_exists(key);
+        options.display.top = !raw;
         if (P > 1) {
             ConceptLdaParallel topic_model(options);
             topic_model.load();
@@ -309,6 +352,7 @@ int main(int argc, char* argv[]) {
         options.I = I;
         options.K = K;
         options.output_dir = out;
+        options.display.top = !raw;
 
         Lda topic_model(options);
         topic_model.load();

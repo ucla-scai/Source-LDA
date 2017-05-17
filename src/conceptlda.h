@@ -30,14 +30,12 @@ public:
 //----------------------------------------------------------------------------------
 class ConceptLda {
 protected:
-    vector<vector<int>> key_t;
-    int corr;
-    int out_of;
     Stats stats;
     vector<vector<int>> corpus;
     vector<int>* corpus_t;
     bool* hidden;
     vector<int> visible_topics;
+    vector<vector<int>> ground_truth;
     vector<string> topic_labels;
     vector<unordered_set<int>> concepts;
     double* pr;
@@ -64,7 +62,6 @@ protected:
     void Populate_prob(int i, int t, int word, int doc, int start);
     virtual int Pop_sample(int word, int doc);
 public:
-    int token_count;
     gsl_rng * RANDOM_NUMBER;
     double alpha;
     double beta_phi;

@@ -6,6 +6,7 @@
 #include <vector>
 #include "utility.h"
 #include "gtpoints.h"
+#include "srclda.h"
 #include <unordered_map>
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
@@ -15,12 +16,14 @@ public:
     int I;
     string corpus;
     string output_dir;
+    DisplayOptions display;
     LdaOptions();
 };
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 class Lda {
 protected:
+    string Clean(double d);
     Stats stats;
     vector<vector<int>> corpus;
     vector<int>* corpus_t;
